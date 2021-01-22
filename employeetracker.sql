@@ -8,6 +8,7 @@ id INT AUTO_INCREMENT,
 dept_name VARCHAR(30),
 PRIMARY KEY (id)
 );
+INSERT INTO departments (dept_name) VALUES ("Acquisitions");
 
 CREATE TABLE roles (
 id INT AUTO_INCREMENT,
@@ -33,6 +34,8 @@ FOREIGN KEY (manager_id) REFERENCES departments (id)
 
 INSERT INTO departments (dept_name) VALUES ("Acquisitions");
 
-INSERT INTO roles (title, salary) VALUES ("Manager", 90000.00);
+INSERT INTO roles (title, salary) VALUES ("Manager", 90,000.00);
 
 INSERT INTO employees (first_name, last_name) VALUES ("Rex", "Flores");
+
+SELECT * FROM employeetracker_db;
