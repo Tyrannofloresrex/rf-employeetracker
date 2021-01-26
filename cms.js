@@ -1,14 +1,8 @@
 const inquirer = require("inquirer");
 
-const mySQL = require("mysql");
+// const mySQL = require("mysql");
+const jsQuery = require ("./query.js");
 
-var connection = mySQL.createConnection({
-  port: 3306,
-  host: "localhost",
-  user: "root",
-  password: "password",
-  database: "employeetracker_db",
-});
 
 function mainPrompt() {
     inquirer
@@ -46,8 +40,10 @@ function mainPrompt() {
             connection.end();
             break;
         }
-     });
- }
+    });
+};
+
+
 
  function addOptions(){
      inquirer
@@ -61,7 +57,7 @@ function mainPrompt() {
              "Add Role",
              "Add Employee",
              "Return to Main Menu"
-         ],
+            ],
         },
     ]) .then (function (choices) {
         switch (choices.add_menu) {
@@ -70,11 +66,11 @@ function mainPrompt() {
             break;
 
             case "Add Role":
-
+            roleAdd();
             break;
 
             case "Add Employee":
-            
+            employeeAdd();
             break;
 
             case "Return to Main Menu":
@@ -82,7 +78,7 @@ function mainPrompt() {
             break;
         }
     }
-)}
+)};
 
 function viewOptions(){
     inquirer
@@ -92,9 +88,9 @@ function viewOptions(){
         name: "view_menu",
         message: "What would you like to view on this database?",
         choices: [
-            "View Department",
-            "View Role",
-            "View Employee",
+            "View Departments",
+            "View Roles",
+            "View Employees",
             "View Employee by Manager",
             "View Department Budget",
             "Return to Main Menu"
@@ -102,32 +98,35 @@ function viewOptions(){
        },
    ]) .then (function (choices) {
        switch (choices.view_menu) {
-           case "View Department":
-
+           case "View Departments":
+            jsQuery.viewData("departments");
+            mainPrompt();
            break;
 
-           case "View  Role":
-
+           case "View Roles":
+            jsQuery.viewData("roles");
+            mainPrompt();
            break;
 
-           case "View Employee":
+           case "View Employees":
+            jsQuery.viewData("employees");
+            mainPrompt();
+           break;
+
+        //    case "View Employee by Manager":
            
-           break;
+        //    break;
 
-           case "View Employee by Manager":
-           
-           break;
-
-           case "View Department Budget":
+        //    case "View Department Budget":
             
-           break;
+        //    break;
 
            case "Return to Main Menu":
-           mainPrompt()
+           mainPrompt();
            break;
        }
    }
-)}
+)};
 
 function updateOptions(){
     inquirer
@@ -135,7 +134,7 @@ function updateOptions(){
        {
         type:"list",
         name: "update_menu",
-        message: "What would you like to update on this database?",
+        message: "How would you like to update this database?",
         choices: [
             "Update Role",
             "Update Manager",
@@ -145,19 +144,19 @@ function updateOptions(){
    ]) .then (function (choices) {
        switch (choices.view_menu) {
            case "Update Role":
-
+                roleUpdate();
            break;
 
-           case "Update Manager":
+        //    case "Update Manager":
            
-           break;
+        //    break;
 
            case "Return to Main Menu":
            mainPrompt()
            break;
        }
    }
-)}
+)};
 
 function deleteOptions(){
     inquirer
@@ -167,24 +166,25 @@ function deleteOptions(){
         name: "delete_menu",
         message: "What would you like to delete from this database?",
         choices: [
+            "Delete Department",
             "Delete Role",
-            "Delete Manager",
+            "Delete Employee",
             "Return to Main Menu"
         ],
        },
    ]) .then (function (choices) {
-       switch (choices.view_menu) {
+       switch (choices.delete_menu) {
            
         case "Delete Department":
-           
+           deptDelete();
         break;
         
         case "Delete Role":
-
+            roleDelete();
         break;
 
         case "Delete Employee":
-        
+            employeeDelete();
         break;
 
         case "Return to Main Menu":
@@ -192,8 +192,121 @@ function deleteOptions(){
         break;
        }
    }
-)}
+)};
+async function deptDelete(){
+    console.log("in")
+    let departments = await jsQuery.selectData("departments", "*")
+    const deptChoices = departments.map(function (department) {
+        console.log("departments")
+        return department.dept_name
+    })
+    
+    inquirer
+    .prompt ([
+        {
+            type:"list",
+            name:"del_dept",
+           message: "Which department would you like to delete?",
+           choices: deptChoices
+        }
+    ]).then(function(ans){
+        console.log("made it")
+        jsQuery.deleteFrom("departments", {dept_name: ans.del_dept})
+        console.log(ans.del_dept)
+        mainPrompt();
+    })
+}
 
+async function roleDelete(){
+    let roles = await jsQuery.selectData("roles", "*")
+    const roleChoices = roles.map(function(role) {
+        return role.title
+    })
+    inquirer
+    .prompt ([
+        {
+            type:"list",
+            name:"del_role",
+           message: "Which role would you like to delete?",
+           choices: roleChoices
+        }
+    ]).then(function(ans){
+        jsQuery.deleteFrom("roles",{title: ans.del_role})
+        console.log(ans.del_role)
+        mainPrompt();
+    })
+}
+async function employeeDelete(){
+    let employees = await jsQuery.selectData("employees", "*")
+    const employeeChoices = employees.map(function(employee) {
+        return employee.first_name +" "+ employee.last_name
+    })
+    inquirer
+    .prompt ([
+        {
+            type:"list",
+            name:"del_employee",
+           message: "Which employee would you like to delete?",
+           choices: employeeChoices
+        }
+    ]).then(function(ans){
+        let selectedEmployee = employees.filter(employee=> ans.del_employee==employee.first_name +" "+ employee.last_name)[0]
+        console.log(selectedEmployee)
+        jsQuery.deleteFrom("employees", {id: selectedEmployee.id})
+        console.log(ans.del_employee)
+        mainPrompt();
+    })
+}
+async function roleUpdate(){
+    let employees= await jsQuery.selectData("employees", "*")
+    let roles = await jsQuery.selectData("roles", "*")
+    const employeeChoices = employees.map(function (emplyee){
+        return employee.first_name + employee.last_name
+    })
+    const roleChoices = roles.map(function(role) {
+        return role.title
+    })
+    console.log(employeeChoices)
+    console.log(roleChoices)
+    inquirer
+    .prompt([
+        {
+        type: "list",
+        name: "name",
+        message: "Whose role would you like to update?",
+        choices: employeeChoices
+        },
+        {
+            type: "input",
+            name: "new_role",
+            message: "What is this employee's new role?",
+            choices: roleChoices
+        }
+        .then (function(ans) {
+        jsQuery.updateData("roles", {name: ans.name, title: ans.new_role})
+        mainPrompt();
+        })
+    ])
+}
+// function managerUpdate(){
+//     inquirer
+//     .prompt([
+//         {
+//         type: "list",
+//         name: "old_name",
+//         message: "Which employee would you like to update?",
+//         choices:
+//         },
+//         {
+//             type: "input",
+//             name: "new_name",
+//             message: "What department is this employee moving to?",
+//         }.then (function(ans) {
+//         jsQuery.updateData("departments", ans.new_name)
+//         mainPrompt();
+//         })
+//     ])
+// }
 function departmentAdd() {
     inquirer
     .prompt([
@@ -202,18 +315,56 @@ function departmentAdd() {
      name: "dept_name",
      message: "What is the name of this new department?"
         }
-    ]).then(function(ans) {
-    var sql= "INSERT INTO departments (name) VALUES ?"
-    let dept_name = ans.name
-        connection.query(sql, dept_name), function(err, result) {  
-            if (err) throw err;  
-            console.log(result.name + "added to database");  
-        }
+        ]).then(function(ans) {
+        
+        jsQuery.addTo("departments", ans)
+        console.log(ans + "this was")
+        mainPrompt();
+    });
+};
+function roleAdd() {
+    inquirer
+    .prompt([
+        {
+        type: "input",
+        name: "title",
+        message: "What is the name of the new role you would like to add?"
+        },
+        {
+            type: "number",
+            name: "salary",
+            message: "What is the salary for this new role? (pick a positive number up to 100000)"
+            }
+    ]).then(function(ans){
+        jsQuery.addTo("roles", ans)
+        mainPrompt()
     })
-}
-
-function employeeAdd(){
-    inquirer.prompt([
+};
+async function employeeAdd() {
+    let departments = await jsQuery.selectData("departments", "*")
+    let roles = await jsQuery.selectData("roles", "*")
+    const deptChoices = departments.map(function (department){
+        return department.dept_name
+    })
+    const roleChoices = roles.map(function(role) {
+        return role.title
+    })
+    console.log(departments)
+    console.log(roleChoices)
+    inquirer
+    .prompt([
+        {
+            type: "list",
+            name: "dept",
+            message: "What department does this new employee work in?",
+            choices: deptChoices
+        },
+        {
+            type:"list",
+            name: "role",
+            message: "What is this employee's role within the company?",
+            choices: roleChoices
+        },
         {
             type: "input",
             name: "last_name",
@@ -224,39 +375,14 @@ function employeeAdd(){
             name: "first_name",
             message: "What is the new employee's first name?"  
         },
-        {
-            type: "confirm",
-            name: "mgmt_status",
-            message: "Is this employee a manager?" 
-        }
-    ]).then (function(ans) {
-        if (ans.mgmt_status===true){
-            inquirer
-            .prompt([
-                {
-                    type: "list",
-                    name: "mngr_dept",
-                    message: "What department does this person manage?"
-                    // choices: TODO:populate choices with options from database
-                }
-            ]).then(function())
-        } else {
-            inquirer.prompt ([
-                {
-                    type:"list",
-                    name: "role",
-                    message: "What is this employee's role within the company?"
-                    // choices: TODO:populate choices with options from database
-                },
-                {
-                    type: "list",
-                    name: "dept",
-                    message: "What department does this employee work in?"
-                    // choices: TODO:populate choices with options from database
+    ]).then(function(info) {
+        if (info.role === "Manager"){
 
-                },
-            ]).then()
         }
-    }
-    )
-}
+        jsQuery.addTo("employees", info)
+        mainPrompt()
+    })              
+};
+
+
+mainPrompt()
